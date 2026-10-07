@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Viewer + pencarian ID pelanggan dummy Rajabiller (Vue 3: table, tree & JSON view)",
+  "description": "Viewer + pencarian data API (ID pelanggan dummy Rajabiller, daftar universitas) — Vue 3: table, tree & JSON view",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

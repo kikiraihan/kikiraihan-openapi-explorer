@@ -1,6 +1,6 @@
 // Handler proxy CORS sederhana, dipakai oleh vite dev server (vite.config.js) dan server.js.
 // GET /proxy?url=<endpoint>  → meneruskan request ke endpoint (host dibatasi, supaya tidak jadi open proxy)
-const ALLOWED_HOSTS = (process.env.PROXY_HOSTS || 'c-dev-api.rajabiller.com').split(',').map((s) => s.trim());
+const ALLOWED_HOSTS = (process.env.PROXY_HOSTS || 'c-dev-api.rajabiller.com,universities.hipolabs.com').split(',').map((s) => s.trim());
 
 export async function handleProxy(req, res) {
   const url = new URL(req.url, 'http://localhost');

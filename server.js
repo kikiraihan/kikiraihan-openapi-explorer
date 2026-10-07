@@ -15,11 +15,13 @@ http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   if (url.pathname === '/proxy') return handleProxy(req, res);
 
-  const file = path.normalize(path.join(ROOT, url.pathname === '/' ? 'index.html' : decodeURIComponent(url.pathname)));
+  let file = path.normalize(path.join(ROOT, decodeURIComponent(url.pathname)));
   if (!file.startsWith(ROOT)) { res.writeHead(403); return res.end(); }
+  // folder (/, /rajabiller-dummy-id-pelanggan, /daftar-universitas/) → index.html di dalamnya
+  if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404); return res.end(fs.existsSync(ROOT) ? 'not found' : 'dist/ belum ada, jalankan: npm run build'); }
     res.writeHead(200, { 'content-type': MIME[path.extname(file)] || 'application/octet-stream' });
     res.end(data);
   });
-}).listen(PORT, () => console.log(`ID Pelanggan Dummy viewer → http://localhost:${PORT}`));
+}).listen(PORT, () => console.log(`API listing viewer → http://localhost:${PORT}`));

@@ -4,7 +4,7 @@
 
 const DB_NAME = 'idpel-viewer-cache';
 const STORE = 'responses';
-const KEY = 'last';
+// key = slot per sumber data (lihat cacheKey di sources.js); 'last' = slot lama milik Rajabiller
 
 let dbPromise;
 function openDb() {
@@ -34,25 +34,25 @@ function tx(mode, fn) {
 }
 
 /** @returns {Promise<{url:string, text:string, fetchedAt:number, via:string, size:number}|null>} */
-export async function readCache() {
-  try { return (await tx('readonly', (s) => s.get(KEY))) || null; } catch { return null; }
+export async function readCache(key) {
+  try { return (await tx('readonly', (s) => s.get(key))) || null; } catch { return null; }
 }
 
 /** Menimpa cache lama dengan response baru. Melempar error bila gagal (mis. kuota penuh). */
-export async function writeCache({ url, text, via }) {
+export async function writeCache(key, { url, text, via }) {
   const entry = { url, text, via, fetchedAt: Date.now(), size: text.length };
   try {
-    await tx('readwrite', (s) => s.put(entry, KEY));
+    await tx('readwrite', (s) => s.put(entry, key));
   } catch (e) {
     // gagal simpan: hapus yang lama juga supaya tidak tertinggal data basi yang tidak sesuai
-    await clearCache();
+    await clearCache(key);
     throw e;
   }
   return entry;
 }
 
-export async function clearCache() {
-  try { await tx('readwrite', (s) => s.delete(KEY)); } catch { /* abaikan */ }
+export async function clearCache(key) {
+  try { await tx('readwrite', (s) => s.delete(key)); } catch { /* abaikan */ }
 }
 
 // ---------- Format waktu ----------
