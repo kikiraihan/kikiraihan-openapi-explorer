@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watchEffect, onMounted, onBeforeUnmount } from 'vue';
-import { state, load, savePrefs } from './store.js';
+import { state, init, savePrefs } from './store.js';
 import SourceBar from './components/SourceBar.vue';
 import TableView from './components/TableView.vue';
 import TreeView from './components/TreeView.vue';
@@ -34,7 +34,7 @@ function toggleTheme() {
 function closeDropdowns(e) {
   document.querySelectorAll('details.dropdown[open]').forEach((d) => { if (!d.contains(e.target)) d.open = false; });
 }
-onMounted(() => { document.addEventListener('click', closeDropdowns); load(); });
+onMounted(() => { document.addEventListener('click', closeDropdowns); init(); });
 onBeforeUnmount(() => document.removeEventListener('click', closeDropdowns));
 </script>
 
