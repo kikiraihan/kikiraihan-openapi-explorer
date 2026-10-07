@@ -11,6 +11,8 @@
 Buka link di atas di browser, tidak perlu clone repo, `npm install`, atau menjalankan server sendiri.
 Bagian **Menjalankan** di bawah hanya diperlukan jika ingin mengembangkan atau meng-host sendiri.
 
+![Screenshot ID Pelanggan Dummy Rajabiller — tampilan Tabel dengan pencarian "PLNPRAH sukses"](public/shots/rajabiller-dummy-id-pelanggan.webp)
+
 ## Halaman
 
 | URL | Isi | Penjelasan |

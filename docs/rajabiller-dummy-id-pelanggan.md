@@ -14,6 +14,8 @@ Buka link di atas di browser, tidak perlu clone repo, `npm install`, atau menjal
 Contoh langsung filter produk: [`?prefix=PLNPRAH`](https://rajabiller-dummy-id-pelanggan-searc.vercel.app/rajabiller-dummy-id-pelanggan/?prefix=PLNPRAH).
 Link lama di root (`/?prefix=…`) otomatis diteruskan ke halaman ini.
 
+![Screenshot ID Pelanggan Dummy Rajabiller — tampilan Tabel dengan pencarian "PLNPRAH sukses"](../public/shots/rajabiller-dummy-id-pelanggan.webp)
+
 ## Tentang
 
 **Rajabiller** adalah *biller aggregator* / supplier multi biller **Host to Host (H2H)** untuk layanan
