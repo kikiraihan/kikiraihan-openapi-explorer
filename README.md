@@ -46,6 +46,8 @@ src/
     TreeNode.vue          node folder (rekursif, lazy render)
     TreeLeaves.vue        daftar item/leaf (dibatasi 300, ada "tampilkan lagi")
     JsonView.vue          response mentah
+    RowDetail.vue         modal detail baris (klik baris tabel / item tree)
+    InfoTip.vue           tombol ⓘ untuk teks bantuan / detail panjang
   assets/style.css
 proxy.js                  handler proxy CORS (dipakai vite.config.js & server.js)
 server.js                 server produksi tanpa dependency

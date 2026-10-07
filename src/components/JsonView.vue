@@ -18,8 +18,8 @@ const html = computed(() => {
 <template>
   <div class="panel">
     <div class="toolbar">
-      <div class="muted">{{ (text.length / 1024).toFixed(1) }} KB</div>
-      <button class="btn" @click="copy(text)">⧉ Copy JSON</button>
+      <div class="muted small">{{ (text.length / 1024).toFixed(1) }} KB</div>
+      <button class="btn" data-tip="Copy seluruh response" @click="copy(text)">⧉<span class="hide-sm"> Copy JSON</span></button>
     </div>
     <pre class="json" v-html="html"></pre>
   </div>

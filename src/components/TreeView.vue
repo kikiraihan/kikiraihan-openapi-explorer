@@ -4,6 +4,7 @@ import { state, rows, filtered, matchTerms, savePrefs, resetTreeDefaults } from 
 import { str, termsOf, colLabel, uniqueValues, sameGrouping, debounce, fmtInt } from '../lib/data.js';
 import TreeNode from './TreeNode.vue';
 import TreeLeaves from './TreeLeaves.vue';
+import InfoTip from './InfoTip.vue';
 
 const terms = computed(() => termsOf(state.tree.search));
 const treeRows = computed(() => {
@@ -55,58 +56,66 @@ function toggleMeta(c, on) {
   savePrefs();
 }
 
-const info = computed(() => `${fmtInt(treeRows.value.length)} item` +
-  (state.tree.levels.length ? ` · grouping: ${state.tree.levels.map(colLabel).join(' › ')}` : ''));
+const info = computed(() => `${fmtInt(treeRows.value.length)} item`);
+const grouping = computed(() => state.tree.levels.map(colLabel).join(' › '));
 const sortedGroups = computed(() => [...root.value.children.values()].sort((a, b) => a.key.localeCompare(b.key, 'id', { numeric: true })));
 </script>
 
 <template>
   <div class="panel">
     <div class="toolbar">
-      <div class="toolbar-left">
-        <button class="btn accent" @click="expandAll">⤢ Expand All</button>
-        <button class="btn" @click="collapseAll">⤡ Collapse All</button>
-        <details class="dropdown">
-          <summary class="btn">⚙ Struktur</summary>
-          <div class="dropdown-body wide">
-            <div class="cfg-section">
-              <h4>Level grouping (folder)</h4>
-              <div v-for="(l, i) in state.tree.levels" :key="i" class="cfg-level">
-                <span class="muted">{{ i + 1 }}.</span>
-                <select :value="l" @change="setLevel(i, $event.target.value)">
+      <input class="search narrow" type="search" :value="state.tree.search" placeholder="Cari kategori atau produk…"
+        @input="setSearch($event.target.value)" />
+      <div class="toolbar-right">
+        <div class="btn-group">
+          <button class="btn" data-tip="Buka semua" aria-label="Expand all" @click="expandAll">⤢<span class="hide-sm"> Buka</span></button>
+          <button class="btn" data-tip="Tutup semua" aria-label="Collapse all" @click="collapseAll">⤡<span class="hide-sm"> Tutup</span></button>
+          <details class="dropdown">
+            <summary class="btn" data-tip="Atur struktur tree">⚙<span class="hide-sm"> Struktur</span></summary>
+            <div class="dropdown-body wide">
+              <div class="cfg-section">
+                <h4>Level grouping (folder)</h4>
+                <div v-for="(l, i) in state.tree.levels" :key="i" class="cfg-level">
+                  <span class="muted">{{ i + 1 }}.</span>
+                  <select :value="l" @change="setLevel(i, $event.target.value)">
+                    <option v-for="c in state.columns" :key="c" :value="c">{{ colLabel(c) }}</option>
+                  </select>
+                  <button class="btn sm" title="Naikkan" :disabled="!i" @click="upLevel(i)">↑</button>
+                  <button class="btn sm" title="Hapus" @click="delLevel(i)">✕</button>
+                </div>
+                <div v-if="!state.tree.levels.length" class="muted small">Tanpa grouping</div>
+                <button class="btn sm" @click="addLevel">+ Tambah level</button>
+              </div>
+              <div class="cfg-section">
+                <h4>Label item (leaf)</h4>
+                <select :value="state.tree.label" style="width: 100%" @change="setLabel($event.target.value)">
                   <option v-for="c in state.columns" :key="c" :value="c">{{ colLabel(c) }}</option>
                 </select>
-                <button class="btn sm" title="Naikkan" :disabled="!i" @click="upLevel(i)">↑</button>
-                <button class="btn sm" title="Hapus" @click="delLevel(i)">✕</button>
               </div>
-              <div v-if="!state.tree.levels.length" class="muted small">Tanpa grouping</div>
-              <button class="btn sm" @click="addLevel">+ Tambah level</button>
+              <div class="cfg-section">
+                <h4>Info di kanan item</h4>
+                <label v-for="c in state.columns" :key="c">
+                  <input type="checkbox" :checked="state.tree.meta.includes(c)" @change="toggleMeta(c, $event.target.checked)" /> {{ colLabel(c) }}
+                </label>
+              </div>
+              <div class="cfg-section">
+                <h4>Data</h4>
+                <label><input v-model="state.tree.useTableFilter" type="checkbox" /> Ikut filter tabel</label>
+              </div>
+              <button class="btn sm" @click="resetTreeDefaults">↺ Struktur otomatis</button>
             </div>
-            <div class="cfg-section">
-              <h4>Label item (leaf)</h4>
-              <select :value="state.tree.label" style="width: 100%" @change="setLabel($event.target.value)">
-                <option v-for="c in state.columns" :key="c" :value="c">{{ colLabel(c) }}</option>
-              </select>
-            </div>
-            <div class="cfg-section">
-              <h4>Info di kanan item</h4>
-              <label v-for="c in state.columns" :key="c">
-                <input type="checkbox" :checked="state.tree.meta.includes(c)" @change="toggleMeta(c, $event.target.checked)" /> {{ colLabel(c) }}
-              </label>
-            </div>
-            <button class="btn sm" @click="resetTreeDefaults">↺ Struktur otomatis</button>
-          </div>
-        </details>
-        <label class="check muted"><input v-model="state.tree.useTableFilter" type="checkbox" /> ikut filter tabel</label>
+          </details>
+        </div>
       </div>
-      <input class="search narrow" type="search" :value="state.tree.search" placeholder="Search category or product…"
-        @input="setSearch($event.target.value)" />
     </div>
 
     <template v-if="!rows.length"><div class="empty">Belum ada data.</div></template>
     <template v-else-if="!treeRows.length"><div class="empty">Tidak ada yang cocok.</div></template>
     <template v-else>
-      <div class="muted small">{{ info }}</div>
+      <div class="muted small tree-info">
+        {{ info }}
+        <InfoTip v-if="grouping" label="Info grouping">Grouping: {{ grouping }}<br>Klik item untuk lihat detail.</InfoTip>
+      </div>
       <div :key="treeKey" class="tree">
         <ul>
           <TreeNode v-for="g in sortedGroups" :key="g.key" :node="g" :depth="0" />

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, inject } from 'vue';
-import { state, copy } from '../store.js';
+import { state, openDetail } from '../store.js';
 import { highlight, fmtCell, statusClass, showAsBadge } from '../lib/data.js';
 
 const props = defineProps({ rows: { type: Array, required: true } });
@@ -17,7 +17,8 @@ const metaOf = (r) => state.tree.meta.filter((c) => r[c] !== '' && r[c] != null)
 
 <template>
   <li v-for="(r, i) in shown" :key="i">
-    <div class="leaf-row" title="Klik dua kali untuk copy" @dblclick="copy(JSON.stringify(r))">
+    <!-- klik item → modal detail (semua field) -->
+    <div class="leaf-row clickable" title="Klik untuk lihat detail" @click="openDetail(rows, i)">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.6" stroke-linejoin="round">
         <path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z" /><path d="M4 7.5 12 12l8-4.5M12 12v9" />
       </svg>
@@ -25,7 +26,7 @@ const metaOf = (r) => state.tree.meta.filter((c) => r[c] !== '' && r[c] != null)
       <span class="leaf-meta">
         <template v-for="c in metaOf(r)" :key="c">
           <span v-if="showAsBadge(c, r[c])" class="badge" :class="statusClass(r[c])" :title="c" v-html="highlight(r[c], terms)"></span>
-          <span v-else :class="state.numericCols.has(c) ? 'num' : 'code'" :title="c" v-html="highlight(fmtCell(c, r[c], state.numericCols), terms)"></span>
+          <span v-else :class="state.numericCols.has(c) ? 'num' : 'code'" :title="`${c}: ${r[c]}`" v-html="highlight(fmtCell(c, r[c], state.numericCols), terms)"></span>
         </template>
       </span>
     </div>
