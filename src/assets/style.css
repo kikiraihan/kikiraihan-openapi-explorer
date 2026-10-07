@@ -163,7 +163,8 @@ details[open] > summary[data-tip]::after, [data-tip]:disabled::after { display: 
 .cfg-level select { flex: 1; }
 
 /* Table */
-.table-wrap { overflow: auto; max-height: 68vh; border: 1px solid var(--border); border-radius: 6px; }
+/* tinggi tabel tidak dibatasi (pakai scroll halaman), hanya scroll horizontal bila kolom melebar */
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 6px; }
 table { border-collapse: collapse; width: 100%; font-size: 13px; }
 thead th { position: sticky; top: 0; background: var(--card); z-index: 2; text-align: left; border-bottom: 1px solid var(--border); }
 thead tr.filters th { top: 37px; padding: 4px 6px 8px; }
