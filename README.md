@@ -20,6 +20,9 @@ npm start             # sajikan dist/ + proxy → http://localhost:8080
 
 `dist/` juga bisa di-host di web server statis mana pun (base path relatif), namun tanpa proxy.
 
+**Vercel**: proxy tersedia lewat serverless function `api/proxy.js` (`/proxy` di-rewrite ke
+`/api/proxy` oleh `vercel.json`). Env `PROXY_HOSTS` bisa diset di Project Settings → Environment Variables.
+
 Endpoint `/proxy?url=...` (tersedia di `npm run dev`, `npm run preview`, dan `npm start`) dipakai
 sebagai cadangan bila browser memblokir request langsung karena CORS. Proxy hanya mengizinkan host
 `c-dev-api.rajabiller.com` (ubah lewat env `PROXY_HOSTS=host1,host2`).
@@ -46,6 +49,8 @@ src/
   assets/style.css
 proxy.js                  handler proxy CORS (dipakai vite.config.js & server.js)
 server.js                 server produksi tanpa dependency
+api/proxy.js              proxy untuk deploy di Vercel (serverless function)
+vercel.json               rewrite /proxy → /api/proxy
 ```
 
 ## Fitur
