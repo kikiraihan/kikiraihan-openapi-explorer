@@ -11,6 +11,8 @@
 Buka link di atas di browser, tidak perlu clone repo, `npm install`, atau menjalankan server sendiri.
 Bagian **Menjalankan** di bawah hanya diperlukan jika ingin mengembangkan atau meng-host sendiri.
 
+![Screenshot ID Pelanggan Dummy Rajabiller — tampilan Tabel dengan pencarian "PLNPRAH sukses"](public/shots/rajabiller-dummy-id-pelanggan.webp)
+
 ## Halaman
 
 | URL | Isi | Penjelasan |
@@ -113,6 +115,7 @@ Response terakhir tiap sumber disimpan di browser (IndexedDB) supaya halaman lan
 3. Daftarkan halaman di `build.rollupOptions.input` (`vite.config.js`).
 4. Tambahkan host-nya ke `PROXY_HOSTS` default di `proxy.js` bila API tidak mengizinkan CORS atau hanya `http`.
 5. Tambahkan kartunya di `src/Home.vue`, penjelasannya di `docs/<folder>.md`, dan barisnya di tabel **Halaman** di atas.
+6. Opsional: screenshot kartu di `public/shots/<folder>.webp` (rasio 16:10, mis. 1200×750) lalu isi `image` di kartu; tanpa `image` kartu memakai placeholder bermotif.
 
 ## FAQ
 

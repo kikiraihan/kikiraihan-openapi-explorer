@@ -9,10 +9,12 @@ const GITHUB_URL = 'https://github.com/kikiraihan/kikiraihan-openapi-explorer';
 // deskripsi singkat per kartu (teks halaman awal saja, konfigurasi API tetap di sources.js)
 // - tagline : 1 baris yang langsung terlihat
 // - desc    : penjelasan lengkap, hanya tampil di tooltip (ⓘ)
+// - image   : screenshot opsional (path relatif ke public/); tanpa image tampil placeholder bermotif + ikon
 const cards = [
   {
     ...SOURCES.rajabiller,
     icon: 'bolt',
+    image: 'shots/rajabiller-dummy-id-pelanggan.webp',
     tagline: 'IDPEL dummy untuk testing PPOB / H2H',
     desc: 'ID pelanggan (IDPEL) dummy untuk testing integrasi API Rajabiller (PPOB / H2H): PLN, PDAM, BPJS, Telkom, multifinance, dll.',
     endpoint: 'c-dev-api.rajabiller.com/idpel_dummy.php',
@@ -27,6 +29,12 @@ const cards = [
     filters: ['name', 'country', 'limit', 'offset'],
   },
 ];
+
+// path ikon kartu (dipakai di ikon kecil dan di placeholder screenshot)
+const ICONS = {
+  bolt: ['M13 2 4 14h7l-1 8 9-12h-7z'],
+  cap: ['m2 9 10-5 10 5-10 5z', 'M6 11v5c3 2.5 9 2.5 12 0v-5'],
+};
 
 // fitur utama, ditampilkan sebagai chip kecil (detail di tooltip)
 const features = [
@@ -76,28 +84,36 @@ function toggleTheme() {
 
     <div class="home-grid">
       <div v-for="c in cards" :key="c.id" class="card home-card">
-        <span class="home-icon" aria-hidden="true">
-          <svg v-if="c.icon === 'bolt'" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
-            <path d="M13 2 4 14h7l-1 8 9-12h-7z" />
-          </svg>
-          <svg v-else viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
-            <path d="m2 9 10-5 10 5-10 5z" /><path d="M6 11v5c3 2.5 9 2.5 12 0v-5" />
-          </svg>
-        </span>
-        <div class="home-text">
-          <h2><a class="home-link" :href="c.path">{{ c.title }}</a></h2>
-          <p class="muted">{{ c.tagline }}</p>
-          <!-- sumber data terlihat langsung; kalau kepanjangan dipotong "…" (URL lengkap di tooltip) -->
-          <code class="home-src" :title="c.url">{{ c.endpoint }}</code>
-        </div>
-        <InfoTip class="home-info" align="right" :label="'Info ' + c.title">
-          <div>{{ c.desc }}</div>
-          <div class="home-meta">
-            <code>{{ c.endpoint }}</code>
-            <span>Filter API: <code v-for="f in c.filters" :key="f">{{ f }}</code></span>
+        <!-- screenshot di atas; kartu tanpa gambar dapat placeholder supaya tinggi kartu tetap seragam -->
+        <div class="home-shot" aria-hidden="true">
+          <img v-if="c.image" :src="c.image" alt="" loading="lazy" width="1200" height="750">
+          <div v-else class="home-shot-empty">
+            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
+              <path v-for="d in ICONS[c.icon]" :key="d" :d="d" />
+            </svg>
           </div>
-        </InfoTip>
-        <span class="home-arrow" aria-hidden="true">→</span>
+        </div>
+        <div class="home-row">
+          <span class="home-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+              <path v-for="d in ICONS[c.icon]" :key="d" :d="d" />
+            </svg>
+          </span>
+          <div class="home-text">
+            <h2><a class="home-link" :href="c.path">{{ c.title }}</a></h2>
+            <p class="muted">{{ c.tagline }}</p>
+            <!-- sumber data terlihat langsung; kalau kepanjangan dipotong "…" (URL lengkap di tooltip) -->
+            <code class="home-src" :title="c.url">{{ c.endpoint }}</code>
+          </div>
+          <InfoTip class="home-info" align="right" :label="'Info ' + c.title">
+            <div>{{ c.desc }}</div>
+            <div class="home-meta">
+              <code>{{ c.endpoint }}</code>
+              <span>Filter API: <code v-for="f in c.filters" :key="f">{{ f }}</code></span>
+            </div>
+          </InfoTip>
+          <span class="home-arrow" aria-hidden="true">→</span>
+        </div>
       </div>
     </div>
 
