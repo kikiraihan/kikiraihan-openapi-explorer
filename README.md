@@ -76,6 +76,7 @@ src/
     TreeNode.vue          node folder (rekursif, lazy render)
     TreeLeaves.vue        daftar item/leaf (dibatasi 300, ada "tampilkan lagi")
     JsonView.vue          response mentah
+    DataInfo.vue          tab Info: keterangan sumber data + ringkasan isi data
     RowDetail.vue         modal detail baris (klik baris tabel / item tree)
     InfoTip.vue           tombol ⓘ untuk teks bantuan / detail panjang
   assets/style.css
@@ -103,6 +104,10 @@ vercel.json               rewrite /proxy → /api/proxy
 
 **JSON View** — response mentah dengan syntax highlight + copy.
 
+**Info** — keterangan sumber data (isi data, penyedia, asal data, endpoint, filter API, catatan) +
+ringkasan data yang dihitung otomatis: jumlah baris & kolom, sebaran per grup (mis. per kategori / provinsi),
+dan daftar kolom (tipe, % terisi, jumlah nilai unik, contoh nilai). Keterangan statis diisi lewat `about` di `src/sources.js`.
+
 Response apa pun bentuknya dinormalisasi: array of object, `{status, data:[...]}`,
 atau map bertingkat `{GRUP:{SUBGRUP:[...]}}` (key map menjadi kolom `Grup 1`, `Grup 2`, …).
 Pengaturan (kolom tersembunyi, struktur tree, parameter API) disimpan di localStorage per halaman, tema dipakai bersama.
@@ -110,7 +115,7 @@ Response terakhir tiap sumber disimpan di browser (IndexedDB) supaya halaman lan
 
 ## Menambah API baru
 
-1. Tambahkan entri di `src/sources.js` (endpoint, parameter API, `lsKey`, `cacheKey`, judul).
+1. Tambahkan entri di `src/sources.js` (endpoint, parameter API, `lsKey`, `cacheKey`, judul, dan `about` untuk tab **Info**).
 2. Buat `<folder>/index.html` dengan `<div id="app" data-source="<id>">` (salin dari halaman yang ada, sesuaikan meta/SEO).
 3. Daftarkan halaman di `build.rollupOptions.input` (`vite.config.js`).
 4. Tambahkan host-nya ke `PROXY_HOSTS` default di `proxy.js` bila API tidak mengizinkan CORS atau hanya `http`.
