@@ -1,13 +1,32 @@
 <script setup>
-import { ref, nextTick, watch } from 'vue';
-import { state, load, ingest } from '../store.js';
+import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from 'vue';
+import { state, load, ingest, clearCache } from '../store.js';
 import { esc } from '../lib/data.js';
+import { timeAgo, fmtDate, fmtBytes } from '../lib/cache.js';
 import InfoTip from './InfoTip.vue';
 
 // form sumber (endpoint, prefix, tempel, file) disembunyikan dulu; yang tampil cuma ringkasan
 const showForm = ref(false);
 // kalau gagal memuat, buka form supaya user langsung bisa ganti endpoint / tempel JSON
 watch(() => state.status.kind, (k) => { if (k === 'err') showForm.value = true; });
+
+// jam internal supaya teks "x menit lalu" ikut berubah tanpa reload
+const now = ref(Date.now());
+let clock;
+const tick = () => (now.value = Date.now());
+const onVisible = () => { if (!document.hidden) tick(); };
+onMounted(() => { clock = setInterval(tick, 30_000); document.addEventListener('visibilitychange', onVisible); });
+onBeforeUnmount(() => { clearInterval(clock); document.removeEventListener('visibilitychange', onVisible); });
+
+// data dianggap usang bila lebih dari 1 hari → chip berwarna kuning sebagai pengingat untuk memuat ulang
+const STALE_MS = 24 * 3600 * 1000;
+const fetchedAgo = computed(() => state.fetched && timeAgo(state.fetched.fetchedAt, now.value));
+const stale = computed(() => state.fetched && now.value - state.fetched.fetchedAt > STALE_MS);
+const fetchedTip = computed(() => {
+  const f = state.fetched;
+  if (!f) return '';
+  return `${f.fromCache ? 'Data tersimpan · ' : ''}diambil ${fmtDate(f.fetchedAt)}`;
+});
 
 const showPaste = ref(false);
 const pasteText = ref('');
@@ -50,9 +69,18 @@ async function loadFile(e) {
         <!-- status.detail hanya berisi teks yang sudah di-escape di store -->
         <InfoTip v-if="state.status.detail" label="Detail status"><span v-html="state.status.detail"></span></InfoTip>
       </div>
-      <div class="btn-group">
-        <button class="btn" :disabled="state.loading" data-tip="Ambil ulang dari endpoint" @click="load">⟳<span class="hide-sm"> Muat ulang</span></button>
-        <button class="btn" :class="{ active: showForm }" :aria-expanded="showForm" @click="showForm = !showForm">⚙<span class="hide-sm"> Sumber</span> <span class="chev">▾</span></button>
+      <div class="source-actions">
+        <!-- kapan data yang tampil terakhir diambil dari endpoint -->
+        <span v-if="state.fetched" class="fetched-chip" :class="{ stale }" :data-tip="fetchedTip" :aria-label="fetchedTip">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+          </svg>
+          <span><span class="hide-sm">Diambil </span>{{ fetchedAgo }}</span>
+        </span>
+        <div class="btn-group">
+          <button class="btn" :class="{ attention: stale && !state.loading }" :disabled="state.loading" :aria-busy="state.loading" data-tip="Ambil data terbaru dari endpoint" @click="load"><span class="reload-icon" :class="{ spinning: state.loading }">⟳</span><span class="hide-sm">{{ state.loading ? ' Memuat…' : ' Muat ulang' }}</span></button>
+          <button class="btn" :class="{ active: showForm }" :aria-expanded="showForm" @click="showForm = !showForm">⚙<span class="hide-sm"> Sumber</span> <span class="chev">▾</span></button>
+        </div>
       </div>
     </div>
 
@@ -74,6 +102,14 @@ async function loadFile(e) {
           </div>
         </div>
       </form>
+      <!-- info data yang tersimpan di browser (hanya 1 salinan terakhir, ditimpa setiap fetch berhasil) -->
+      <div class="cache-info small muted">
+        <template v-if="state.cacheInfo">
+          <span>Tersimpan di browser: <b>{{ fmtBytes(state.cacheInfo.size) }}</b> · {{ fmtDate(state.cacheInfo.fetchedAt) }}</span>
+          <button type="button" class="link-btn" @click="clearCache">Hapus data tersimpan</button>
+        </template>
+        <span v-else>Belum ada data tersimpan di browser. Hasil fetch berikutnya akan disimpan otomatis.</span>
+      </div>
       <div v-if="showPaste" class="paste-box">
         <textarea ref="pasteArea" v-model="pasteText" placeholder="Tempel response JSON di sini…"></textarea>
         <div class="row-end">

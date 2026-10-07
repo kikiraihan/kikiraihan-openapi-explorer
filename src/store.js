@@ -3,6 +3,7 @@ import { reactive, shallowRef, computed, watch } from 'vue';
 import {
   esc, str, extractRecords, analyze, uniqueValues, sameGrouping, parseColFilter, termsOf, toNumber, isStatusCol,
 } from './lib/data.js';
+import { readCache, writeCache, clearCache as clearCacheDb, fmtBytes } from './lib/cache.js';
 
 const LS_KEY = 'idpel-viewer-v1';
 
@@ -22,6 +23,10 @@ export const state = reactive({
   loading: false,
   // msg = ringkasan pendek (selalu tampil), detail = keterangan panjang (HTML ter-escape, tampil di tooltip info)
   status: { msg: '', kind: '', detail: '', source: '' },
+  // fetched = info data endpoint yang sedang tampil ({ url, fetchedAt, via, fromCache }), null bila dari tempel/file
+  fetched: null,
+  // cacheInfo = info data yang tersimpan di browser ({ url, fetchedAt, size }), null bila kosong
+  cacheInfo: null,
   columns: [],
   numericCols: new Set(),
   hidden: new Set(prefs.hidden || []),
@@ -126,15 +131,15 @@ async function fetchJson(url) {
   const parse = async (res) => {
     if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
     const text = await res.text();
-    try { return JSON.parse(text); } catch { throw new Error('Response bukan JSON valid: ' + text.slice(0, 200)); }
+    try { return { data: JSON.parse(text), text }; } catch { throw new Error('Response bukan JSON valid: ' + text.slice(0, 200)); }
   };
   try {
-    return { data: await parse(await fetch(url)), via: 'langsung' };
+    return { ...(await parse(await fetch(url))), via: 'langsung' };
   } catch (err) {
     // fallback ke proxy (vite dev server / server.js) bila diblok CORS
     if (location.protocol.startsWith('http')) {
       try {
-        return { data: await parse(await fetch('/proxy?url=' + encodeURIComponent(url))), via: 'proxy' };
+        return { ...(await parse(await fetch('/proxy?url=' + encodeURIComponent(url)))), via: 'proxy' };
       } catch (err2) { throw new Error(`${err.message} · proxy: ${err2.message}`); }
     }
     throw err;
@@ -142,27 +147,70 @@ async function fetchJson(url) {
 }
 
 export async function load() {
+  if (state.loading) return;
   let url;
   try { url = buildUrl(); } catch { state.status = { msg: 'URL tidak valid', kind: 'err', detail: '', source: '' }; return; }
   savePrefs();
+  // data lama tetap tampil selama memuat ulang; status lama disimpan untuk dikembalikan kalau gagal
+  const hadData = rows.value.length > 0;
   state.loading = true;
-  state.status = { msg: 'Memuat…', kind: '', detail: `Mengambil <code>${esc(url)}</code>`, source: sourceName(url) };
+  state.status = { msg: hadData ? 'Memuat ulang…' : 'Memuat…', kind: '', detail: `Mengambil <code>${esc(url)}</code>`, source: sourceName(url) };
   const t0 = performance.now();
   try {
-    const { data, via } = await fetchJson(url);
+    const { data, text, via } = await fetchJson(url);
     ingest(data);
+    const ms = Math.round(performance.now() - t0);
+    state.fetched = { url, fetchedAt: Date.now(), via, fromCache: false };
     state.status = {
       msg: `${rows.value.length.toLocaleString('id-ID')} baris`, kind: 'ok', source: sourceName(url),
-      detail: `Dari <code>${esc(url)}</code><br>${via} · ${Math.round(performance.now() - t0)} ms`,
+      detail: `Dari <code>${esc(url)}</code><br>${via} · ${ms} ms`,
     };
+    // simpan ke browser (menimpa cache lama); tidak menunggu supaya UI tidak tertahan
+    writeCache({ url, text, via })
+      .then((e) => { state.cacheInfo = { url: e.url, fetchedAt: e.fetchedAt, size: e.size }; state.fetched.fetchedAt = e.fetchedAt; })
+      .catch(() => { state.cacheInfo = null; toast(`Data (${fmtBytes(text.length)}) tidak bisa disimpan di browser`); });
   } catch (e) {
-    state.status = {
-      msg: 'Gagal memuat data', kind: 'err', source: sourceName(url),
-      detail: `${esc(e.message)}.<br>Kemungkinan diblok CORS — jalankan <code>npm run dev</code> atau <code>npm start</code> (ada proxy), atau gunakan <b>Tempel JSON</b> / <b>File</b> di menu Sumber.`,
-    };
+    const help = `${esc(e.message)}.<br>Kemungkinan diblok CORS — jalankan <code>npm run dev</code> atau <code>npm start</code> (ada proxy), atau gunakan <b>Tempel JSON</b> / <b>File</b> di menu Sumber.`;
+    state.status = hadData
+      // masih ada data sebelumnya → tetap tampilkan, beri peringatan saja
+      ? { msg: 'Gagal memuat ulang', kind: 'warn', source: 'menampilkan data sebelumnya', detail: help }
+      : { msg: 'Gagal memuat data', kind: 'err', source: sourceName(url), detail: help };
   } finally {
     state.loading = false;
   }
+}
+
+/**
+ * Dipanggil sekali saat aplikasi dibuka: pakai data tersimpan di browser bila ada dan sumbernya sama,
+ * kalau tidak ada / beda endpoint (mis. lewat ?url=) baru fetch ke endpoint.
+ */
+export async function init() {
+  const c = await readCache();
+  let url = '';
+  try { url = buildUrl(); } catch { /* biarkan load() yang melapor */ }
+  if (!c || c.url !== url) {
+    if (c) state.cacheInfo = { url: c.url, fetchedAt: c.fetchedAt, size: c.size };
+    return load();
+  }
+  try {
+    ingest(JSON.parse(c.text));
+  } catch {
+    await clearCacheDb();
+    return load();
+  }
+  state.cacheInfo = { url: c.url, fetchedAt: c.fetchedAt, size: c.size };
+  state.fetched = { url: c.url, fetchedAt: c.fetchedAt, via: c.via, fromCache: true };
+  state.status = {
+    msg: `${rows.value.length.toLocaleString('id-ID')} baris`, kind: 'ok', source: sourceName(c.url),
+    detail: `Data tersimpan di browser (${fmtBytes(c.size)})<br>Dari <code>${esc(c.url)}</code><br>Klik <b>Muat ulang</b> untuk mengambil data terbaru.`,
+  };
+}
+
+export async function clearCache() {
+  await clearCacheDb();
+  state.cacheInfo = null;
+  if (state.fetched) state.fetched.fromCache = false;
+  toast('Data tersimpan dihapus');
 }
 
 export function ingest(json, sourceLabel) {
@@ -177,6 +225,8 @@ export function ingest(json, sourceLabel) {
   state.page = 1;
   rows.value = recs;
   setupTreeDefaults();
+  // data dari tempel/file bukan hasil fetch endpoint → info "terakhir diambil" disembunyikan
+  if (sourceLabel) state.fetched = null;
   if (sourceLabel) state.status = { msg: `${recs.length.toLocaleString('id-ID')} baris`, kind: 'ok', detail: `Dari ${esc(sourceLabel)}`, source: sourceLabel };
 }
 
