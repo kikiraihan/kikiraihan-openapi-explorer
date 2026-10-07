@@ -248,6 +248,7 @@ td.rownum { color: var(--muted); text-align: right; width: 1%; white-space: nowr
 
 /* JSON */
 .json { margin: 0; padding: 14px; background: var(--bg); border-radius: 6px; overflow: auto; max-height: 72vh; font: 12px/1.5 var(--mono); }
+.json .json-chunk { display: block; }
 .json .k { color: #b04ad6; } .json .s { color: #2c8a3e; } .json .n { color: #2f6fd6; } .json .b { color: #d6772f; }
 
 /* Modal detail baris */
