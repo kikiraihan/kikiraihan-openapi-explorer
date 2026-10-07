@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ID Pelanggan Dummy</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="page-head">
+    <div>
+      <div class="eyebrow">RAJABILLER · DEV</div>
+      <h1>ID Pelanggan Dummy</h1>
+    </div>
+    <button id="themeBtn" class="btn ghost" title="Ganti tema">◐ Tema</button>
+  </header>
+
+  <!-- Sumber data -->
+  <section class="card source">
+    <form id="fetchForm" class="source-row">
+      <label class="field grow">
+        <span>Endpoint</span>
+        <input id="urlInput" type="url" value="https://c-dev-api.rajabiller.com/idpel_dummy.php" required />
+      </label>
+      <label class="field">
+        <span>Prefix (opsional)</span>
+        <input id="prefixInput" type="text" placeholder="mis. PLNPRAH" />
+      </label>
+      <div class="field actions">
+        <button type="submit" class="btn primary" id="fetchBtn">⟳ Fetch</button>
+        <button type="button" class="btn" id="pasteBtn" title="Tempel JSON manual">Tempel JSON</button>
+        <label class="btn" title="Muat dari file .json">File<input id="fileInput" type="file" accept=".json,application/json,text/plain" hidden /></label>
+      </div>
+    </form>
+    <div id="pasteBox" class="paste-box" hidden>
+      <textarea id="pasteArea" placeholder="Tempel response JSON di sini…"></textarea>
+      <div class="row-end">
+        <button type="button" class="btn" id="pasteCancel">Batal</button>
+        <button type="button" class="btn primary" id="pasteLoad">Muat</button>
+      </div>
+    </div>
+    <div id="status" class="status" role="status"></div>
+  </section>
+
+  <!-- Tabs -->
+  <section class="card main">
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="table" role="tab">▦ Table View</button>
+      <button class="tab" data-tab="tree" role="tab">⑂ Tree View</button>
+      <button class="tab" data-tab="json" role="tab">{ } JSON View</button>
+    </nav>
+
+    <!-- TABLE -->
+    <div class="panel" id="panel-table">
+      <div class="toolbar">
+        <input id="globalSearch" class="search" type="search" placeholder="Cari di semua kolom… (pisahkan kata dengan spasi)" />
+        <div class="toolbar-right">
+          <details class="dropdown" id="colMenu">
+            <summary class="btn">☰ Kolom</summary>
+            <div class="dropdown-body" id="colList"></div>
+          </details>
+          <button class="btn" id="clearFilters">✕ Reset filter</button>
+          <button class="btn" id="exportCsv">⤓ CSV</button>
+        </div>
+      </div>
+      <div class="hint">Filter per kolom: teks = mengandung · <code>=nilai</code> = sama persis · <code>!teks</code> = tidak mengandung · angka: <code>&gt;1000</code>, <code>&lt;=5000</code>, <code>100..500</code>. Klik judul kolom untuk sort, klik dua kali sel untuk copy.</div>
+      <div class="table-wrap">
+        <table id="dataTable">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <div id="rowInfo" class="muted"></div>
+        <div class="pager-ctrl">
+          <label class="muted">Baris
+            <select id="pageSize">
+              <option>25</option><option selected>50</option><option>100</option><option>500</option><option value="0">Semua</option>
+            </select>
+          </label>
+          <button class="btn sm" id="prevPage">‹</button>
+          <span id="pageInfo" class="muted"></span>
+          <button class="btn sm" id="nextPage">›</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TREE -->
+    <div class="panel" id="panel-tree" hidden>
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button class="btn accent" id="expandAll">⤢ Expand All</button>
+          <button class="btn" id="collapseAll">⤡ Collapse All</button>
+          <details class="dropdown" id="treeCfgMenu">
+            <summary class="btn">⚙ Struktur</summary>
+            <div class="dropdown-body wide" id="treeCfg"></div>
+          </details>
+          <label class="check muted"><input type="checkbox" id="treeUseTableFilter" checked /> ikut filter tabel</label>
+        </div>
+        <input id="treeSearch" class="search narrow" type="search" placeholder="Search category or product…" />
+      </div>
+      <div id="treeInfo" class="muted small"></div>
+      <div id="tree" class="tree"></div>
+    </div>
+
+    <!-- JSON -->
+    <div class="panel" id="panel-json" hidden>
+      <div class="toolbar">
+        <div class="muted" id="jsonInfo"></div>
+        <button class="btn" id="copyJson">⧉ Copy JSON</button>
+      </div>
+      <pre id="jsonView" class="json"></pre>
+    </div>
+  </section>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="app.js"></script>
+</body>
+</html>

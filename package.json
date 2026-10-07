@@ -1,0 +1,10 @@
+{
+  "name": "rajabiller-dummy-id-pelanggan-search",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Viewer + pencarian ID pelanggan dummy Rajabiller (table & tree view)",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": { "node": ">=18" }
+}
