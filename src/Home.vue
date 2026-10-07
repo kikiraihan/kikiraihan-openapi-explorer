@@ -87,6 +87,8 @@ function toggleTheme() {
         <div class="home-text">
           <h2><a class="home-link" :href="c.path">{{ c.title }}</a></h2>
           <p class="muted">{{ c.tagline }}</p>
+          <!-- sumber data terlihat langsung; kalau kepanjangan dipotong "…" (URL lengkap di tooltip) -->
+          <code class="home-src" :title="c.url">{{ c.endpoint }}</code>
         </div>
         <InfoTip class="home-info" align="right" :label="'Info ' + c.title">
           <div>{{ c.desc }}</div>
