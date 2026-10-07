@@ -4,6 +4,14 @@
 > (Host to Host / H2H) di environment development — PLN prabayar & pascabayar, PDAM, BPJS, Telkom,
 > multifinance, dan produk PPOB lainnya.
 
+### 🌐 Langsung pakai — tanpa setup
+
+**👉 [https://rajabiller-dummy-id-pelanggan-searc.vercel.app/](https://rajabiller-dummy-id-pelanggan-searc.vercel.app/)**
+
+Buka link di atas di browser, tidak perlu clone repo, `npm install`, atau menjalankan server sendiri.
+Contoh langsung filter produk: [`?prefix=PLNPRAH`](https://rajabiller-dummy-id-pelanggan-searc.vercel.app/?prefix=PLNPRAH).
+Bagian **Menjalankan** di bawah hanya diperlukan jika ingin mengembangkan atau meng-host sendiri.
+
 **Rajabiller** adalah *biller aggregator* / supplier multi biller **Host to Host (H2H)** untuk layanan
 **PPOB** (Payment Point Online Bank) di Indonesia, bagian dari grup PT Bimasakti Multi Sinergi. Saat
 integrasi dengan API Rajabiller, developer butuh **ID pelanggan (IDPEL) dummy / data testing** per produk
@@ -19,6 +27,8 @@ Dibangun dengan **Vue 3 + Vite**.
 `dummy idpel PPOB`, `integrasi H2H rajabiller`.
 
 ## Menjalankan
+
+> Tidak wajib — versi online sudah tersedia di https://rajabiller-dummy-id-pelanggan-searc.vercel.app/
 
 ```bash
 npm install
