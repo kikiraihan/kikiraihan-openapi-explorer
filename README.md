@@ -1,8 +1,22 @@
-# ID Pelanggan Dummy — Search
+# ID Pelanggan Dummy Rajabiller — Search & Viewer untuk Testing Integrasi API PPOB / H2H
+
+> Cari **ID pelanggan dummy Rajabiller** (`idpel_dummy`) dengan cepat saat sedang **integrasi API Rajabiller**
+> (Host to Host / H2H) di environment development — PLN prabayar & pascabayar, PDAM, BPJS, Telkom,
+> multifinance, dan produk PPOB lainnya.
+
+**Rajabiller** adalah *biller aggregator* / supplier multi biller **Host to Host (H2H)** untuk layanan
+**PPOB** (Payment Point Online Bank) di Indonesia, bagian dari grup PT Bimasakti Multi Sinergi. Saat
+integrasi dengan API Rajabiller, developer butuh **ID pelanggan (IDPEL) dummy / data testing** per produk
+untuk mencoba transaksi *inquiry* dan *payment* di server development. Daftar itu tersedia di endpoint
+`idpel_dummy.php`, tapi berupa JSON panjang yang sulit dibaca — repo ini membuatnya mudah dicari.
 
 Website untuk menampilkan data dari `https://c-dev-api.rajabiller.com/idpel_dummy.php`
 (opsional `?prefix=PLNPRAH`) dalam bentuk **Table**, **Tree**, dan **JSON**.
 Dibangun dengan **Vue 3 + Vite**.
+
+**Cocok untuk kamu yang mencari:** `id pelanggan dummy rajabiller`, `idpel dummy rajabiller`,
+`data testing api rajabiller`, `sandbox rajabiller`, `contoh id pelanggan PLN prabayar untuk testing`,
+`dummy idpel PPOB`, `integrasi H2H rajabiller`.
 
 ## Menjalankan
 
@@ -49,6 +63,7 @@ src/
     RowDetail.vue         modal detail baris (klik baris tabel / item tree)
     InfoTip.vue           tombol ⓘ untuk teks bantuan / detail panjang
   assets/style.css
+public/favicon.svg        favicon (ikon tab browser)
 proxy.js                  handler proxy CORS (dipakai vite.config.js & server.js)
 server.js                 server produksi tanpa dependency
 api/proxy.js              proxy untuk deploy di Vercel (serverless function)
@@ -75,3 +90,26 @@ vercel.json               rewrite /proxy → /api/proxy
 Response apa pun bentuknya dinormalisasi: array of object, `{status, data:[...]}`,
 atau map bertingkat `{GRUP:{SUBGRUP:[...]}}` (key map menjadi kolom `Grup 1`, `Grup 2`, …).
 Pengaturan (kolom tersembunyi, struktur tree, tema) disimpan di localStorage.
+
+## FAQ
+
+**Apa itu ID pelanggan dummy Rajabiller?**
+ID pelanggan (IDPEL / nomor pelanggan) khusus testing yang disediakan Rajabiller di server development
+(`c-dev-api.rajabiller.com`) agar mitra bisa mencoba alur inquiry → payment tanpa transaksi sungguhan.
+
+**Bagaimana mencari ID pelanggan dummy untuk produk tertentu (misal PLN prabayar)?**
+Isi prefix/kode produk (contoh `PLNPRAH`) di form atau buka halaman dengan `?prefix=PLNPRAH`, lalu cari
+di Table View atau telusuri per kategori di Tree View.
+
+**Kenapa request langsung ke endpoint gagal di browser?**
+Biasanya karena CORS. Aplikasi otomatis memakai endpoint `/proxy` sebagai cadangan (lihat bagian Menjalankan).
+
+**Apakah ini repo resmi Rajabiller?**
+Bukan. Ini tool bantu (unofficial) untuk developer yang sedang integrasi. Untuk dokumentasi API, kredensial,
+dan kode produk resmi, hubungi tim Rajabiller.
+
+## Kata kunci
+
+rajabiller · api rajabiller · integrasi rajabiller · h2h rajabiller · id pelanggan dummy · idpel dummy ·
+idpel_dummy.php · data testing ppob · sandbox ppob · biller aggregator indonesia · PLN prabayar ·
+PLN pascabayar · PDAM · BPJS · Telkom · multifinance · Vue 3 · Vite
