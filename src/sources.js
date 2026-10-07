@@ -9,7 +9,7 @@ export const SOURCES = {
     id: 'rajabiller',
     path: 'rajabiller-dummy-id-pelanggan/',
     eyebrow: 'RAJABILLER · DEV',
-    title: 'ID Pelanggan Dummy',
+    title: 'ID Pelanggan Dummy Rajabiller',
     // key lama dipertahankan supaya preferensi & cache user tidak hilang setelah pindah halaman
     lsKey: 'idpel-viewer-v1',
     cacheKey: 'last',
