@@ -6,6 +6,7 @@ import TableView from './components/TableView.vue';
 import TreeView from './components/TreeView.vue';
 import JsonView from './components/JsonView.vue';
 import RowDetail from './components/RowDetail.vue';
+import DataInfo from './components/DataInfo.vue';
 
 const tab = ref('table');
 // tree dirender pertama kali hanya saat tab dibuka, lalu dipertahankan (v-show)
@@ -14,6 +15,8 @@ const tabs = [
   { id: 'table', icon: '▦', label: 'Tabel' },
   { id: 'tree', icon: '⑂', label: 'Tree' },
   { id: 'json', icon: '{ }', label: 'JSON' },
+  // keterangan sumber data + ringkasan isi data (lihat DataInfo.vue)
+  { id: 'info', icon: 'ⓘ', label: 'Info' },
 ];
 function openTab(id) {
   tab.value = id;
@@ -64,6 +67,7 @@ onBeforeUnmount(() => document.removeEventListener('click', closeDropdowns));
     <TableView v-show="tab === 'table'" />
     <TreeView v-if="treeMounted" v-show="tab === 'tree'" />
     <JsonView v-if="tab === 'json'" />
+    <DataInfo v-if="tab === 'info'" />
   </section>
 
   <RowDetail />
