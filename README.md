@@ -115,6 +115,8 @@ Response terakhir tiap sumber disimpan di browser (IndexedDB) supaya halaman lan
 
 ## Menambah API baru
 
+Ketentuan standar lengkap untuk semua API viewer ada di [AGENTS.md](AGENTS.md).
+
 1. Tambahkan entri di `src/sources.js` (endpoint, parameter API, `lsKey`, `cacheKey`, judul, dan `about` untuk tab **Info**).
 2. Buat `<folder>/index.html` dengan `<div id="app" data-source="<id>">` (salin dari halaman yang ada, sesuaikan meta/SEO).
 3. Daftarkan halaman di `build.rollupOptions.input` (`vite.config.js`).
