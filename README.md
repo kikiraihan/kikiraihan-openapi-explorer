@@ -2,23 +2,51 @@
 
 Website untuk menampilkan data dari `https://c-dev-api.rajabiller.com/idpel_dummy.php`
 (opsional `?prefix=PLNPRAH`) dalam bentuk **Table**, **Tree**, dan **JSON**.
-Murni HTML/CSS/JS, tanpa build step dan tanpa dependency.
+Dibangun dengan **Vue 3 + Vite**.
 
 ## Menjalankan
 
 ```bash
-node server.js        # atau: npm start
-# buka http://localhost:8080
+npm install
+npm run dev           # mode development → http://localhost:5173
 ```
 
-`server.js` menyajikan folder `public/` dan menyediakan `/proxy?url=...` sebagai cadangan
-bila browser memblokir request langsung karena CORS. Proxy hanya mengizinkan host
+Produksi:
+
+```bash
+npm run build         # hasil di dist/
+npm start             # sajikan dist/ + proxy → http://localhost:8080
+```
+
+`dist/` juga bisa di-host di web server statis mana pun (base path relatif), namun tanpa proxy.
+
+Endpoint `/proxy?url=...` (tersedia di `npm run dev`, `npm run preview`, dan `npm start`) dipakai
+sebagai cadangan bila browser memblokir request langsung karena CORS. Proxy hanya mengizinkan host
 `c-dev-api.rajabiller.com` (ubah lewat env `PROXY_HOSTS=host1,host2`).
 
-Bisa juga langsung membuka `public/index.html` (tanpa proxy), atau memuat data lewat
-tombol **Tempel JSON** / **File**.
+Data juga bisa dimuat lewat tombol **Tempel JSON** / **File**.
 
 Parameter URL halaman: `?prefix=PLNPRAH` dan `?url=<endpoint lain>` akan otomatis mengisi form.
+
+## Struktur kode
+
+```
+src/
+  main.js                 entry point
+  App.vue                 layout, tab, tema
+  store.js                state global (reactive), fetch, filter, struktur tree otomatis
+  lib/data.js             normalisasi JSON, parser filter, format & highlight
+  components/
+    SourceBar.vue         form endpoint/prefix, tempel JSON, upload file
+    TableView.vue         tabel + search + filter per kolom + sort + pagination + CSV
+    TreeView.vue          toolbar tree + konfigurasi struktur
+    TreeNode.vue          node folder (rekursif, lazy render)
+    TreeLeaves.vue        daftar item/leaf (dibatasi 300, ada "tampilkan lagi")
+    JsonView.vue          response mentah
+  assets/style.css
+proxy.js                  handler proxy CORS (dipakai vite.config.js & server.js)
+server.js                 server produksi tanpa dependency
+```
 
 ## Fitur
 
