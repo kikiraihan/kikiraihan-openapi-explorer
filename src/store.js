@@ -5,21 +5,24 @@ import {
 } from './lib/data.js';
 import { readCache, writeCache, clearCache as clearCacheDb, fmtBytes } from './lib/cache.js';
 
-const LS_KEY = 'idpel-viewer-v1';
+// sumber data aktif (lihat sources.js), diisi lewat configure() sebelum App di-mount
+export let source = null;
+let LS_KEY = 'idpel-viewer-v1';
+// tema dipakai bersama oleh semua halaman (termasuk halaman awal)
+export const THEME_KEY = 'api-viewer-theme';
 
 export function loadPrefs() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { return {}; } }
 function writePrefs(p) { try { localStorage.setItem(LS_KEY, JSON.stringify(p)); } catch { /* abaikan */ } }
-
-const prefs = loadPrefs();
-const qs = new URLSearchParams(location.search);
+export function loadTheme() { try { return localStorage.getItem(THEME_KEY) || ''; } catch { return ''; } }
 
 // data besar disimpan di shallowRef supaya tidak dibuat reactive per-baris
 export const raw = shallowRef(null);
 export const rows = shallowRef([]);
 
 export const state = reactive({
-  url: qs.get('url') || prefs.url || 'https://c-dev-api.rajabiller.com/idpel_dummy.php',
-  prefix: qs.get('prefix') ?? prefs.prefix ?? '',
+  url: '',
+  // nilai parameter query endpoint (mis. { prefix } atau { name, country, limit, offset }), lihat source.params
+  params: {},
   loading: false,
   // msg = ringkasan pendek (selalu tampil), detail = keterangan panjang (HTML ter-escape, tampil di tooltip info)
   status: { msg: '', kind: '', detail: '', source: '' },
@@ -29,13 +32,13 @@ export const state = reactive({
   cacheInfo: null,
   columns: [],
   numericCols: new Set(),
-  hidden: new Set(prefs.hidden || []),
+  hidden: new Set(),
   colFilters: {},
   global: '',
   sort: { col: null, dir: 1 },
   page: 1,
-  pageSize: prefs.pageSize ?? 50,
-  theme: prefs.theme || '',
+  pageSize: 50,
+  theme: '',
   toast: '',
   showFilters: false,
   tree: {
@@ -45,11 +48,29 @@ export const state = reactive({
   },
 });
 
+/**
+ * Memilih sumber data untuk halaman ini + memuat preferensi tersimpan dan parameter URL halaman
+ * (?url=..., serta tiap param sumber, mis. ?prefix=PLNPRAH). Dipanggil sekali sebelum App di-mount.
+ */
+export function configure(src) {
+  source = src;
+  LS_KEY = src.lsKey;
+  const prefs = loadPrefs();
+  const qs = new URLSearchParams(location.search);
+  state.url = qs.get('url') || prefs.url || src.url;
+  const saved = prefs.params || (prefs.prefix != null ? { prefix: prefs.prefix } : {}); // format lama: prefs.prefix
+  state.params = Object.fromEntries(src.params.map((p) => [p.key, qs.get(p.key) ?? saved[p.key] ?? p.default ?? '']));
+  state.hidden = new Set(prefs.hidden || []);
+  state.pageSize = prefs.pageSize ?? 50;
+  state.theme = loadTheme() || prefs.theme || '';
+}
+
 export function savePrefs() {
   writePrefs({
-    url: state.url, prefix: state.prefix, pageSize: state.pageSize, hidden: [...state.hidden],
+    url: state.url, params: { ...state.params }, pageSize: state.pageSize, hidden: [...state.hidden],
     tree: { levels: state.tree.levels, label: state.tree.label, meta: state.tree.meta }, theme: state.theme,
   });
+  try { if (state.theme) localStorage.setItem(THEME_KEY, state.theme); } catch { /* abaikan */ }
 }
 
 let toastTimer;
@@ -113,16 +134,21 @@ watch(() => [state.global, JSON.stringify(state.colFilters)], () => (state.page 
 // ---------- Load data ----------
 function buildUrl() {
   const u = new URL(state.url.trim());
-  const p = state.prefix.trim();
-  if (p) u.searchParams.set('prefix', p); else u.searchParams.delete('prefix');
+  for (const { key } of source.params) {
+    const p = String(state.params[key] ?? '').trim();
+    if (p) u.searchParams.set(key, p); else u.searchParams.delete(key);
+  }
   return u.toString();
 }
+
+// nilai parameter yang terisi, mis. "PLNPRAH" atau "gorontalo · Indonesia"
+export const paramText = (sep = ' · ') => source.params.map(({ key }) => String(state.params[key] ?? '').trim()).filter(Boolean).join(sep);
 
 // nama pendek sumber untuk ringkasan, mis. "idpel_dummy.php · PLNPRAH"
 function sourceName(url) {
   try {
     const u = new URL(url);
-    const p = u.searchParams.get('prefix');
+    const p = source.params.map(({ key }) => u.searchParams.get(key)).filter(Boolean).join(' · ');
     return (u.pathname.split('/').filter(Boolean).pop() || u.host) + (p ? ` · ${p}` : '');
   } catch { return ''; }
 }
@@ -133,7 +159,10 @@ async function fetchJson(url) {
     const text = await res.text();
     try { return { data: JSON.parse(text), text }; } catch { throw new Error('Response bukan JSON valid: ' + text.slice(0, 200)); }
   };
+  // halaman https tidak boleh fetch endpoint http (mixed content) → langsung lewat proxy
+  const viaProxy = location.protocol === 'https:' && url.startsWith('http:');
   try {
+    if (viaProxy) throw new Error('Endpoint http dari halaman https');
     return { ...(await parse(await fetch(url))), via: 'langsung' };
   } catch (err) {
     // fallback ke proxy (vite dev server / server.js) bila diblok CORS
@@ -166,7 +195,7 @@ export async function load() {
       detail: `Dari <code>${esc(url)}</code><br>${via} · ${ms} ms`,
     };
     // simpan ke browser (menimpa cache lama); tidak menunggu supaya UI tidak tertahan
-    writeCache({ url, text, via })
+    writeCache(source.cacheKey, { url, text, via })
       .then((e) => { state.cacheInfo = { url: e.url, fetchedAt: e.fetchedAt, size: e.size }; state.fetched.fetchedAt = e.fetchedAt; })
       .catch(() => { state.cacheInfo = null; toast(`Data (${fmtBytes(text.length)}) tidak bisa disimpan di browser`); });
   } catch (e) {
@@ -185,7 +214,7 @@ export async function load() {
  * kalau tidak ada / beda endpoint (mis. lewat ?url=) baru fetch ke endpoint.
  */
 export async function init() {
-  const c = await readCache();
+  const c = await readCache(source.cacheKey);
   let url = '';
   try { url = buildUrl(); } catch { /* biarkan load() yang melapor */ }
   if (!c || c.url !== url) {
@@ -195,7 +224,7 @@ export async function init() {
   try {
     ingest(JSON.parse(c.text));
   } catch {
-    await clearCacheDb();
+    await clearCacheDb(source.cacheKey);
     return load();
   }
   state.cacheInfo = { url: c.url, fetchedAt: c.fetchedAt, size: c.size };
@@ -207,7 +236,7 @@ export async function init() {
 }
 
 export async function clearCache() {
-  await clearCacheDb();
+  await clearCacheDb(source.cacheKey);
   state.cacheInfo = null;
   if (state.fetched) state.fetched.fromCache = false;
   toast('Data tersimpan dihapus');
@@ -231,7 +260,7 @@ export function ingest(json, sourceLabel) {
 }
 
 // ---------- Struktur tree otomatis ----------
-const RX_GROUP = /^_grup|kategori|category|categ|jenis|tipe|type|group|grup|biller|provider|operator|layanan|service|prefix|produk|product|brand|area|wilayah/i;
+const RX_GROUP = /^_grup|kategori|category|categ|jenis|tipe|type|group|grup|biller|provider|operator|layanan|service|prefix|produk|product|brand|area|wilayah|country|negara|province|provinsi/i;
 const RX_LABEL = /^(nama|name|nama_?produk|product_?name|produk|product|keterangan|description|desc|label|title)$/i;
 const RX_META = /idpel|id_?pel|pelanggan|customer|nomor|no_|kode|code|sku|nominal|harga|price|amount|tagihan|status|aktif/i;
 

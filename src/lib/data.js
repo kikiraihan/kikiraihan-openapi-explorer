@@ -159,6 +159,7 @@ export function statusClass(v) {
   if (/^(inactive|nonaktif|non-aktif|tidak aktif|failed|gagal|false|0|n|no|tidak|closed|error|blocked|gangguan)$/.test(s)) return 'status-bad';
   return 'status-other';
 }
-export const isStatusCol = (c) => /status|aktif|active|state/i.test(c);
+// 'state' hanya bila nama kolom persis state (bukan mis. 'state-province')
+export const isStatusCol = (c) => /status|aktif|active|^state$/i.test(c);
 export const showAsBadge = (c, v) => isStatusCol(c) && v !== '' && v != null && str(v).length < 20;
 export const colLabel = (c) => (c.startsWith('_grup') ? `Grup ${c.slice(5)}` : c);

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, nextTick } from 'vue';
-import { state, rows, filtered, visibleCols, globalTerms, savePrefs, openDetail } from '../store.js';
+import { state, rows, filtered, visibleCols, globalTerms, savePrefs, openDetail, source, paramText } from '../store.js';
 import { str, highlight, fmtCell, statusClass, showAsBadge, colLabel, uniqueValues, debounce, fmtInt } from '../lib/data.js';
 import InfoTip from './InfoTip.vue';
 
@@ -85,7 +85,7 @@ function exportCsv() {
   const csv = [cols.map(q).join(','), ...filtered.value.map((r) => cols.map((c) => q(r[c])).join(','))].join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = `idpel_dummy_${state.prefix.trim() || 'all'}.csv`;
+  a.download = `${source.csvName}_${paramText('_').replace(/[^\w.-]+/g, '-') || 'all'}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }

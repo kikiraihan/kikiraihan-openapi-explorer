@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from 'vue';
-import { state, load, ingest, clearCache } from '../store.js';
+import { state, load, ingest, clearCache, source } from '../store.js';
 import { esc } from '../lib/data.js';
 import { timeAgo, fmtDate, fmtBytes } from '../lib/cache.js';
 import InfoTip from './InfoTip.vue';
@@ -90,9 +90,11 @@ async function loadFile(e) {
           <span>Endpoint</span>
           <input v-model="state.url" type="url" required />
         </label>
-        <label class="field">
-          <span>Prefix (opsional)</span>
-          <input v-model="state.prefix" type="text" placeholder="mis. PLNPRAH" />
+        <!-- parameter query endpoint per sumber (filter lewat hit API), lihat sources.js -->
+        <label v-for="p in source.params" :key="p.key" class="field">
+          <span>{{ p.label }}</span>
+          <input v-model="state.params[p.key]" :type="p.type || 'text'" :min="p.type === 'number' ? 0 : undefined" :placeholder="p.placeholder"
+            :style="p.width ? { width: p.width + 'px' } : undefined" />
         </label>
         <div class="field actions">
           <button type="submit" class="btn primary" :disabled="state.loading">Fetch</button>

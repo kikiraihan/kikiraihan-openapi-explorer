@@ -12,4 +12,14 @@ const proxyPlugin = {
 export default defineConfig({
   base: './',
   plugins: [vue(), proxyPlugin],
+  build: {
+    // multi halaman: halaman awal (root) + 1 halaman per sumber data (lihat src/sources.js)
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        rajabiller: 'rajabiller-dummy-id-pelanggan/index.html',
+        universities: 'daftar-universitas/index.html',
+      },
+    },
+  },
 });

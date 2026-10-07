@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watchEffect, onMounted, onBeforeUnmount } from 'vue';
-import { state, init, savePrefs } from './store.js';
+import { state, init, savePrefs, source } from './store.js';
 import SourceBar from './components/SourceBar.vue';
 import TableView from './components/TableView.vue';
 import TreeView from './components/TreeView.vue';
@@ -41,8 +41,10 @@ onBeforeUnmount(() => document.removeEventListener('click', closeDropdowns));
 <template>
   <header class="page-head">
     <div>
-      <div class="eyebrow">RAJABILLER · DEV</div>
-      <h1>ID Pelanggan Dummy</h1>
+      <!-- link kembali ke halaman awal (daftar semua API viewer) -->
+      <a class="back-link small" href="../">← Semua API</a>
+      <div class="eyebrow">{{ source.eyebrow }}</div>
+      <h1>{{ source.title }}</h1>
     </div>
     <button class="btn icon ghost" data-tip="Ganti tema" aria-label="Ganti tema" @click="toggleTheme">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
