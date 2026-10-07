@@ -1,7 +1,8 @@
 <script setup>
-import { computed } from 'vue';
-import { state, rows, filtered, visibleCols, globalTerms, savePrefs, copy } from '../store.js';
+import { computed, nextTick } from 'vue';
+import { state, rows, filtered, visibleCols, globalTerms, savePrefs, openDetail } from '../store.js';
 import { str, highlight, fmtCell, statusClass, showAsBadge, colLabel, uniqueValues, debounce, fmtInt } from '../lib/data.js';
+import InfoTip from './InfoTip.vue';
 
 const maxPage = computed(() => (state.pageSize ? Math.max(1, Math.ceil(filtered.value.length / state.pageSize)) : 1));
 const page = computed(() => Math.min(state.page, maxPage.value));
@@ -19,9 +20,29 @@ const suggestions = computed(() => {
 const rowInfo = computed(() => {
   const total = filtered.value.length;
   if (!rows.value.length) return '';
-  return `Menampilkan ${total ? start.value + 1 : 0}–${Math.min(start.value + size.value, total)} dari ${fmtInt(total)} baris` +
-    (total !== rows.value.length ? ` (difilter dari ${fmtInt(rows.value.length)})` : '');
+  return `${total ? start.value + 1 : 0}–${Math.min(start.value + size.value, total)} dari ${fmtInt(total)}` +
+    (total !== rows.value.length ? ` (filter dari ${fmtInt(rows.value.length)})` : '');
 });
+
+// jumlah filter aktif (filter kolom + pencarian global) → indikator di tombol Filter & tombol Reset
+const filterCount = computed(() => Object.keys(state.colFilters).length);
+const anyActive = computed(() => filterCount.value > 0 || !!state.global || !!state.sort.col);
+
+// baris filter per kolom disembunyikan dulu; ikon corong di judul kolom membukanya & fokus ke input kolom itu
+const filterInputs = {};
+async function focusFilter(c) {
+  state.showFilters = true;
+  await nextTick();
+  filterInputs[c]?.focus();
+}
+
+// klik baris → modal detail (abaikan kalau user sedang menyeleksi teks)
+function openRow(i) {
+  if (window.getSelection()?.toString()) return;
+  openDetail(filtered.value, start.value + i);
+}
+// teks panjang dipotong di sel; isi lengkap lewat tooltip (title) / modal detail
+const cellTitle = (v) => { const t = str(v); return t.length > 40 ? t : undefined; };
 
 // highlight juga kata dari filter kolom (yang berupa teks biasa)
 function termsFor(c) {
@@ -73,42 +94,63 @@ function exportCsv() {
 <template>
   <div class="panel">
     <div class="toolbar">
-      <input class="search" type="search" :value="state.global" placeholder="Cari di semua kolom… (pisahkan kata dengan spasi)"
-        @input="setGlobal($event.target.value)" />
-      <div class="toolbar-right">
-        <details class="dropdown">
-          <summary class="btn">☰ Kolom</summary>
-          <div class="dropdown-body">
-            <label><input type="checkbox" :checked="!state.hidden.size" @change="toggleAllCols($event.target.checked)" /> <b>Semua kolom</b></label>
-            <hr />
-            <label v-for="c in state.columns" :key="c">
-              <input type="checkbox" :checked="!state.hidden.has(c)" @change="toggleCol(c, $event.target.checked)" /> {{ colLabel(c) }}
-            </label>
-          </div>
-        </details>
-        <button class="btn" @click="clearFilters">✕ Reset filter</button>
-        <button class="btn" @click="exportCsv">⤓ CSV</button>
+      <div class="search-wrap">
+        <input class="search" type="search" :value="state.global" placeholder="Cari di semua kolom…"
+          @input="setGlobal($event.target.value)" />
+        <InfoTip label="Bantuan pencarian & filter">
+          <b>Pencarian</b><br>Pisahkan kata dengan spasi — semua kata harus ada.<br><br>
+          <b>Filter per kolom</b> (ikon corong di judul kolom)<br>
+          teks = mengandung · <code>=nilai</code> = sama persis · <code>!teks</code> = tidak mengandung<br>
+          angka: <code>&gt;1000</code>, <code>&lt;=5000</code>, <code>100..500</code><br><br>
+          Klik judul kolom untuk sort · klik baris untuk lihat detail.
+        </InfoTip>
       </div>
-    </div>
-    <div class="hint">
-      Filter per kolom: teks = mengandung · <code>=nilai</code> = sama persis · <code>!teks</code> = tidak mengandung ·
-      angka: <code>&gt;1000</code>, <code>&lt;=5000</code>, <code>100..500</code>. Klik judul kolom untuk sort, klik dua kali sel untuk copy.
+      <div class="toolbar-right">
+        <button v-if="anyActive" class="btn ghost sm reset" data-tip="Hapus pencarian, filter & sort" @click="clearFilters">✕ Reset</button>
+        <div class="btn-group">
+          <button class="btn" :class="{ active: state.showFilters }" :aria-pressed="state.showFilters" data-tip="Tampilkan filter per kolom"
+            @click="state.showFilters = !state.showFilters">
+            <svg class="i" viewBox="0 0 24 24"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z" /></svg>
+            <span class="hide-sm">Filter</span><span v-if="filterCount" class="count">{{ filterCount }}</span>
+          </button>
+          <details class="dropdown">
+            <summary class="btn" data-tip="Pilih kolom yang tampil">
+              ☰<span class="hide-sm"> Kolom</span><span v-if="state.hidden.size" class="count">{{ visibleCols.length }}/{{ state.columns.length }}</span>
+            </summary>
+            <div class="dropdown-body">
+              <label><input type="checkbox" :checked="!state.hidden.size" @change="toggleAllCols($event.target.checked)" /> <b>Semua kolom</b></label>
+              <hr />
+              <label v-for="c in state.columns" :key="c">
+                <input type="checkbox" :checked="!state.hidden.has(c)" @change="toggleCol(c, $event.target.checked)" /> {{ colLabel(c) }}
+              </label>
+            </div>
+          </details>
+          <button class="btn" data-tip="Export CSV (hasil filter)" aria-label="Export CSV" @click="exportCsv">⤓<span class="hide-sm"> CSV</span></button>
+        </div>
+      </div>
     </div>
 
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th class="sortable" title="nomor baris">#</th>
-            <th v-for="c in visibleCols" :key="c" class="sortable" @click="toggleSort(c)">
-              {{ colLabel(c) }}<span class="arrow">{{ arrow(c) }}</span>
+            <th class="sortable rownum-h" title="nomor baris">#</th>
+            <th v-for="c in visibleCols" :key="c" class="sortable" :class="{ sorted: state.sort.col === c }" @click="toggleSort(c)">
+              <span class="th-inner">
+                <span>{{ colLabel(c) }}</span><span class="arrow">{{ arrow(c) }}</span>
+                <!-- indikator: kolom ini bisa difilter (menyala bila filter aktif) -->
+                <button class="th-filter" :class="{ on: state.colFilters[c] }" :title="state.colFilters[c] ? `Filter: ${state.colFilters[c]}` : 'Filter kolom ini'"
+                  :aria-label="`Filter ${colLabel(c)}`" @click.stop="focusFilter(c)">
+                  <svg viewBox="0 0 24 24"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z" /></svg>
+                </button>
+              </span>
             </th>
           </tr>
-          <tr class="filters">
+          <tr v-if="state.showFilters" class="filters">
             <th></th>
             <th v-for="(c, i) in visibleCols" :key="c">
-              <input :value="state.colFilters[c] || ''" :placeholder="state.numericCols.has(c) ? 'mis. >1000' : 'filter…'"
-                :list="suggestions[c] ? `dl-${i}` : undefined" @input="setColFilter(c, $event.target.value)" />
+              <input :ref="(el) => (filterInputs[c] = el)" :value="state.colFilters[c] || ''" :placeholder="state.numericCols.has(c) ? '>1000' : 'filter…'"
+                :class="{ on: state.colFilters[c] }" :list="suggestions[c] ? `dl-${i}` : undefined" @input="setColFilter(c, $event.target.value)" />
               <datalist v-if="suggestions[c]" :id="`dl-${i}`">
                 <option v-for="u in suggestions[c]" :key="u" :value="'=' + u" />
               </datalist>
@@ -116,12 +158,11 @@ function exportCsv() {
           </tr>
         </thead>
         <tbody>
-          <tr v-if="!rows.length"><td class="empty" :colspan="visibleCols.length + 1">Belum ada data. Klik <b>Fetch</b>.</td></tr>
-          <tr v-else-if="!pageRows.length"><td class="empty" :colspan="visibleCols.length + 1">Tidak ada data yang cocok dengan filter.</td></tr>
-          <tr v-for="(r, i) in pageRows" v-else :key="start + i">
+          <tr v-if="!rows.length"><td class="empty" :colspan="visibleCols.length + 1">Belum ada data.</td></tr>
+          <tr v-else-if="!pageRows.length"><td class="empty" :colspan="visibleCols.length + 1">Tidak ada data yang cocok. <button class="btn sm" @click="clearFilters">Reset filter</button></td></tr>
+          <tr v-for="(r, i) in pageRows" v-else :key="start + i" class="clickable" @click="openRow(i)">
             <td class="rownum">{{ start + i + 1 }}</td>
-            <td v-for="c in visibleCols" :key="c" :class="{ num: state.numericCols.has(c) && !showAsBadge(c, r[c]) }"
-              @dblclick="copy($event.currentTarget.textContent)">
+            <td v-for="c in visibleCols" :key="c" :class="{ num: state.numericCols.has(c) && !showAsBadge(c, r[c]) }" :title="cellTitle(r[c])">
               <span v-if="showAsBadge(c, r[c])" class="badge" :class="statusClass(r[c])" v-html="highlight(r[c], termsFor(c))"></span>
               <span v-else v-html="highlight(fmtCell(c, r[c], state.numericCols), termsFor(c))"></span>
             </td>
@@ -131,17 +172,17 @@ function exportCsv() {
     </div>
 
     <div class="pager">
-      <div class="muted">{{ rowInfo }}</div>
+      <div class="muted small">{{ rowInfo }}</div>
       <div class="pager-ctrl">
-        <label class="muted">Baris
-          <select :value="state.pageSize" @change="setPageSize">
-            <option :value="25">25</option><option :value="50">50</option><option :value="100">100</option>
-            <option :value="500">500</option><option :value="0">Semua</option>
-          </select>
-        </label>
-        <button class="btn sm" :disabled="page <= 1" @click="state.page = page - 1">‹</button>
-        <span class="muted">{{ page }} / {{ maxPage }}</span>
-        <button class="btn sm" :disabled="page >= maxPage" @click="state.page = page + 1">›</button>
+        <select :value="state.pageSize" class="sm" aria-label="Baris per halaman" title="Baris per halaman" @change="setPageSize">
+          <option :value="25">25 / hal</option><option :value="50">50 / hal</option><option :value="100">100 / hal</option>
+          <option :value="500">500 / hal</option><option :value="0">Semua</option>
+        </select>
+        <div class="btn-group">
+          <button class="btn sm" :disabled="page <= 1" aria-label="Halaman sebelumnya" @click="state.page = page - 1">‹</button>
+          <span class="btn sm static">{{ page }} / {{ maxPage }}</span>
+          <button class="btn sm" :disabled="page >= maxPage" aria-label="Halaman berikutnya" @click="state.page = page + 1">›</button>
+        </div>
       </div>
     </div>
   </div>

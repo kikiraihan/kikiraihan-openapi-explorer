@@ -20,7 +20,8 @@ export const state = reactive({
   url: qs.get('url') || prefs.url || 'https://c-dev-api.rajabiller.com/idpel_dummy.php',
   prefix: qs.get('prefix') ?? prefs.prefix ?? '',
   loading: false,
-  status: { msg: '', kind: '' },
+  // msg = ringkasan pendek (selalu tampil), detail = keterangan panjang (HTML ter-escape, tampil di tooltip info)
+  status: { msg: '', kind: '', detail: '', source: '' },
   columns: [],
   numericCols: new Set(),
   hidden: new Set(prefs.hidden || []),
@@ -31,6 +32,7 @@ export const state = reactive({
   pageSize: prefs.pageSize ?? 50,
   theme: prefs.theme || '',
   toast: '',
+  showFilters: false,
   tree: {
     levels: [], label: null, meta: [], search: '', useTableFilter: true,
     // mode buka/tutup: 'auto' | 'expand' | 'collapse'; ver dinaikkan tiap klik Expand/Collapse All
@@ -53,6 +55,18 @@ export function toast(msg) {
 }
 export function copy(text) {
   navigator.clipboard?.writeText(text).then(() => toast('Disalin: ' + text.slice(0, 60)), () => toast('Gagal menyalin'));
+}
+
+// ---------- Detail baris (modal) ----------
+// list disimpan apa adanya (bukan reactive per-baris), index = posisi baris yang sedang dibuka
+export const detail = shallowRef(null);
+export function openDetail(list, index) { detail.value = { list, index }; }
+export function closeDetail() { detail.value = null; }
+export function stepDetail(d) {
+  const cur = detail.value;
+  if (!cur) return;
+  const i = cur.index + d;
+  if (i >= 0 && i < cur.list.length) detail.value = { list: cur.list, index: i };
 }
 
 // ---------- Pencarian ----------
@@ -99,6 +113,15 @@ function buildUrl() {
   return u.toString();
 }
 
+// nama pendek sumber untuk ringkasan, mis. "idpel_dummy.php · PLNPRAH"
+function sourceName(url) {
+  try {
+    const u = new URL(url);
+    const p = u.searchParams.get('prefix');
+    return (u.pathname.split('/').filter(Boolean).pop() || u.host) + (p ? ` · ${p}` : '');
+  } catch { return ''; }
+}
+
 async function fetchJson(url) {
   const parse = async (res) => {
     if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
@@ -120,19 +143,22 @@ async function fetchJson(url) {
 
 export async function load() {
   let url;
-  try { url = buildUrl(); } catch { state.status = { msg: 'URL tidak valid.', kind: 'err' }; return; }
+  try { url = buildUrl(); } catch { state.status = { msg: 'URL tidak valid', kind: 'err', detail: '', source: '' }; return; }
   savePrefs();
   state.loading = true;
-  state.status = { msg: `Mengambil <code>${esc(url)}</code> …`, kind: '' };
+  state.status = { msg: 'Memuat…', kind: '', detail: `Mengambil <code>${esc(url)}</code>`, source: sourceName(url) };
   const t0 = performance.now();
   try {
     const { data, via } = await fetchJson(url);
     ingest(data);
-    state.status = { msg: `✓ ${rows.value.length.toLocaleString('id-ID')} baris dari <code>${esc(url)}</code> (${via}, ${Math.round(performance.now() - t0)} ms)`, kind: 'ok' };
+    state.status = {
+      msg: `${rows.value.length.toLocaleString('id-ID')} baris`, kind: 'ok', source: sourceName(url),
+      detail: `Dari <code>${esc(url)}</code><br>${via} · ${Math.round(performance.now() - t0)} ms`,
+    };
   } catch (e) {
     state.status = {
-      msg: `✗ Gagal mengambil data: ${esc(e.message)}.<br>Kemungkinan diblok CORS — jalankan <code>npm run dev</code> atau <code>npm start</code> (ada proxy), atau gunakan tombol <b>Tempel JSON</b> / <b>File</b>.`,
-      kind: 'err',
+      msg: 'Gagal memuat data', kind: 'err', source: sourceName(url),
+      detail: `${esc(e.message)}.<br>Kemungkinan diblok CORS — jalankan <code>npm run dev</code> atau <code>npm start</code> (ada proxy), atau gunakan <b>Tempel JSON</b> / <b>File</b> di menu Sumber.`,
     };
   } finally {
     state.loading = false;
@@ -151,7 +177,7 @@ export function ingest(json, sourceLabel) {
   state.page = 1;
   rows.value = recs;
   setupTreeDefaults();
-  if (sourceLabel) state.status = { msg: `✓ ${recs.length.toLocaleString('id-ID')} baris dari ${esc(sourceLabel)}`, kind: 'ok' };
+  if (sourceLabel) state.status = { msg: `${recs.length.toLocaleString('id-ID')} baris`, kind: 'ok', detail: `Dari ${esc(sourceLabel)}`, source: sourceLabel };
 }
 
 // ---------- Struktur tree otomatis ----------
