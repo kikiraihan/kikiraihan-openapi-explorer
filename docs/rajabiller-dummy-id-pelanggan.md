@@ -51,6 +51,13 @@ di Table View atau telusuri per kategori di Tree View.
 **Kenapa request langsung ke endpoint gagal di browser?**
 Biasanya karena CORS. Aplikasi otomatis memakai endpoint `/proxy` sebagai cadangan (lihat bagian Menjalankan di README).
 
+**Muncul error `proxy: HTTP 403` di versi online, padahal endpoint bisa dibuka manual di browser?**
+Endpoint ini tidak mengirim header CORS, jadi browser menolak halaman membaca isinya walau status 200. Proxy di Vercel
+juga ditolak (403) oleh firewall Cloudflare server Rajabiller karena request datang dari datacenter. Solusinya:
+buka endpoint di tab baru (link tersedia di ⓘ detail status), salin seluruh JSON-nya, lalu pakai **Tempel JSON**
+(atau simpan sebagai file lalu **File**). Data akan tersimpan di browser untuk kunjungan berikutnya. Alternatif:
+jalankan `npm run dev` / `npm start` di komputer sendiri supaya proxy memakai jaringan Anda.
+
 **Apakah ini repo resmi Rajabiller?**
 Bukan. Ini tool bantu (unofficial) untuk developer yang sedang integrasi. Untuk dokumentasi API, kredensial,
 dan kode produk resmi, hubungi tim Rajabiller.

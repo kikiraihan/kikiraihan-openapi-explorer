@@ -112,7 +112,12 @@ details[open] > summary[data-tip]::after, [data-tip]:disabled::after { display: 
   box-shadow: 0 8px 24px rgba(0,0,0,.14); font-size: 12px; font-weight: 400; line-height: 1.55; cursor: auto; overflow-wrap: anywhere;
 }
 .info-pop.right { left: auto; right: -8px; }
+.info-pop a { color: var(--primary); }
 .info:hover .info-pop, .info:focus .info-pop, .info:focus-within .info-pop { display: block; }
+/* di layar HP tooltip tampil selebar layar di bagian bawah supaya tidak keluar dari tepi kanan/kiri */
+@media (max-width: 600px) {
+  .info-pop, .info-pop.right { position: fixed; top: auto; bottom: 16px; left: 16px; right: 16px; width: auto; max-width: none; max-height: 60vh; overflow: auto; }
+}
 
 .paste-box { margin-top: 12px; }
 .paste-box textarea { width: 100%; min-height: 160px; font-family: var(--mono); font-size: 12px; }
