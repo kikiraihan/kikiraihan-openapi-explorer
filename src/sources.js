@@ -30,6 +30,8 @@ export const SOURCES = {
         'Data dummy khusus environment development, bukan data pelanggan sungguhan.',
         'Response berupa map bertingkat per kategori/produk; key map ditampilkan sebagai kolom Grup 1, Grup 2, …',
         'Isi prefix (kode produk, mis. PLNPRAH) untuk mengambil data satu produk saja.',
+        'Endpoint tidak mengizinkan CORS dan proxy di versi online bisa ditolak firewall (Cloudflare) server tujuan; '
+          + 'bila gagal, buka endpoint di tab baru lalu salin isinya ke Tempel JSON.',
       ],
       docs: 'docs/rajabiller-dummy-id-pelanggan.md',
     },

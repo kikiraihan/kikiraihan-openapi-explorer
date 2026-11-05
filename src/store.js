@@ -153,6 +153,22 @@ function sourceName(url) {
   } catch { return ''; }
 }
 
+// teks bantuan saat fetch gagal, disesuaikan dengan penyebabnya
+function failHelp(e, url) {
+  const open = `<a href="${esc(url)}" target="_blank" rel="noopener">buka endpoint di tab baru</a>`;
+  const paste = `salin seluruh isinya, lalu pakai <b>Tempel JSON</b> di menu Sumber (atau simpan sebagai file lalu pakai <b>File</b>)`;
+  if (e.proxyError === 'upstream') {
+    const cf = /cloudflare/i.test(e.upstreamServer) ? ' (Cloudflare)' : '';
+    return `${esc(e.message)}.<br>Server tujuan${cf} menolak request dari proxy — biasanya karena request dari server/datacenter diblok firewall-nya, `
+      + `sedangkan dari browser langsung diblok CORS.<br>Solusi: ${open}, ${paste}. `
+      + `Alternatif: jalankan <code>npm run dev</code> / <code>npm start</code> di komputer sendiri supaya proxy memakai jaringan Anda.`;
+  }
+  if (e.proxyError === 'host-not-allowed') {
+    return `${esc(e.message)}.<br>Host endpoint belum diizinkan di proxy (env <code>PROXY_HOSTS</code>). Atau ${open}, ${paste}.`;
+  }
+  return `${esc(e.message)}.<br>Kemungkinan diblok CORS — jalankan <code>npm run dev</code> atau <code>npm start</code> (ada proxy), atau ${open}, ${paste}.`;
+}
+
 async function fetchJson(url) {
   const parse = async (res) => {
     if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
@@ -167,9 +183,17 @@ async function fetchJson(url) {
   } catch (err) {
     // fallback ke proxy (vite dev server / server.js) bila diblok CORS
     if (location.protocol.startsWith('http')) {
+      let res;
       try {
-        return { ...(await parse(await fetch('/proxy?url=' + encodeURIComponent(url)))), via: 'proxy' };
-      } catch (err2) { throw new Error(`${err.message} · proxy: ${err2.message}`); }
+        res = await fetch('/proxy?url=' + encodeURIComponent(url));
+        return { ...(await parse(res)), via: 'proxy' };
+      } catch (err2) {
+        const e = new Error(`${err.message} · proxy: ${err2.message}`);
+        // jenis kegagalan proxy: 'upstream' = server tujuan menolak, 'host-not-allowed' = host belum diizinkan di proxy
+        e.proxyError = res?.headers.get('x-proxy-error') || '';
+        e.upstreamServer = res?.headers.get('x-upstream-server') || '';
+        throw e;
+      }
     }
     throw err;
   }
@@ -199,7 +223,7 @@ export async function load() {
       .then((e) => { state.cacheInfo = { url: e.url, fetchedAt: e.fetchedAt, size: e.size }; state.fetched.fetchedAt = e.fetchedAt; })
       .catch(() => { state.cacheInfo = null; toast(`Data (${fmtBytes(text.length)}) tidak bisa disimpan di browser`); });
   } catch (e) {
-    const help = `${esc(e.message)}.<br>Kemungkinan diblok CORS — jalankan <code>npm run dev</code> atau <code>npm start</code> (ada proxy), atau gunakan <b>Tempel JSON</b> / <b>File</b> di menu Sumber.`;
+    const help = failHelp(e, url);
     state.status = hadData
       // masih ada data sebelumnya → tetap tampilkan, beri peringatan saja
       ? { msg: 'Gagal memuat ulang', kind: 'warn', source: 'menampilkan data sebelumnya', detail: help }
